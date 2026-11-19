@@ -1,8 +1,4 @@
 
-const loginContainer = document.getElementById("login-container");
-const loginForm = document.getElementById("login-form");
-const loginMessage = document.getElementById("login-message");
-
 const productForm = document.getElementById("product-form");
 const productFormSection = productForm.closest(".admin-form");
 const productsSection = document.getElementById("admin-product-list").closest(".admin-products");
@@ -20,65 +16,11 @@ const cancelButton = document.getElementById("cancel-button");
 let productoEditando = null;
 let imagenActual = null;
 
-function mostrarPanel(visible) {
-    loginContainer.hidden = visible;
-    productFormSection.hidden = !visible;
-    productsSection.hidden = !visible;
-}
+// Mostrar directamente el panel
+productFormSection.hidden = false;
+productsSection.hidden = false;
 
-async function iniciarPanel() {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-
-    if (session) {
-        mostrarPanel(true);
-        cargarProductos();
-        agregarBotonCerrarSesion();
-    } else {
-        mostrarPanel(false);
-    }
-}
-
-loginForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    loginMessage.textContent = "Ingresando...";
-
-    const email = document.getElementById("login-email").value;
-    const password = document.getElementById("login-password").value;
-
-    const { error } = await supabaseClient.auth.signInWithPassword({
-        email,
-        password
-    });
-
-    if (error) {
-        loginMessage.textContent = "Correo o contraseña incorrectos.";
-        console.error(error);
-        return;
-    }
-
-    loginMessage.textContent = "";
-    mostrarPanel(true);
-    cargarProductos();
-    agregarBotonCerrarSesion();
-});
-
-function agregarBotonCerrarSesion() {
-    if (document.getElementById("logout-button")) return;
-
-    const boton = document.createElement("button");
-    boton.id = "logout-button";
-    boton.textContent = "Cerrar sesión";
-    boton.type = "button";
-    boton.style.margin = "20px";
-
-    productFormSection.before(boton);
-
-    boton.addEventListener("click", async () => {
-        await supabaseClient.auth.signOut();
-        location.reload();
-    });
-}
+cargarProductos();
 
 async function cargarProductos() {
     productList.textContent = "Cargando productos...";
@@ -268,31 +210,3 @@ function limpiarFormulario() {
 }
 
 cancelButton.addEventListener("click", limpiarFormulario);
-
-iniciarPanel();
-
-
-const forgotPasswordButton = document.getElementById("forgot-password");
-
-forgotPasswordButton.addEventListener("click", async () => {
-    const email = document.getElementById("login-email").value.trim();
-
-    if (!email) {
-        alert("Primero escribí tu correo electrónico.");
-        return;
-    }
-
-    const { error } = await supabaseClient.auth.resetPasswordForEmail(
-        email,
-        {
-            redirectTo: "https://mrbanana-tobs.github.io/que-rico/reset-password.html"
-        }
-    );
-
-    if (error) {
-        alert("No se pudo enviar el correo: " + error.message);
-        return;
-    }
-
-    alert("¡Listo! Revisá tu correo para recuperar la contraseña.");
-});
