@@ -42,14 +42,22 @@ async function mostrarCatalogo() {
 
         const precio = document.createElement("strong");
         precio.textContent = "$" + producto.price.toLocaleString("es-AR");
-
         const boton = document.createElement("a");
         boton.textContent = "Consultar por WhatsApp";
         boton.className = "whatsapp-button";
-        boton.href = "https://wa.me/TUNUMERO?text=" +
-            encodeURIComponent("Hola! Quiero consultar por " + producto.name);
-        boton.target = "_blank";
 
+        const mensaje = `¡Hola! Quiero consultar por este producto:
+
+        Producto: ${producto.name}
+        Precio: $${producto.price.toLocaleString("es-AR")}
+
+        ¿Me podrían dar más información?`;
+
+        boton.href = "https://wa.me/5491125864262?text=" +  
+        encodeURIComponent(mensaje);
+
+        boton.target = "_blank";
+        boton.rel = "noopener noreferrer";
         tarjeta.append(foto, titulo, categoria, descripcion, precio, boton);
         contenedor.appendChild(tarjeta);
     });
