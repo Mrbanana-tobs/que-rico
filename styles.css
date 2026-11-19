@@ -246,3 +246,127 @@ footer p {
     border-radius: 25px;
     font-weight: bold;
 }
+
+/* PANEL DE ADMINISTRACIÓN */
+
+.admin-container {
+    max-width: 1100px;
+    margin: auto;
+    padding: 50px 6%;
+}
+
+.admin-form {
+    background: white;
+    padding: 30px;
+    border-radius: 18px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    max-width: 650px;
+    margin: 0 auto 50px;
+}
+
+.admin-form h2,
+.admin-products h2 {
+    margin-bottom: 25px;
+}
+
+.admin-form form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.admin-form label {
+    font-weight: bold;
+    margin-top: 8px;
+}
+
+.admin-form input,
+.admin-form select,
+.admin-form textarea {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid #e5d6d3;
+    border-radius: 9px;
+    font-size: 16px;
+    background: #fffaf8;
+}
+
+.admin-form textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.admin-form button {
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.admin-products {
+    margin-top: 40px;
+}
+
+#admin-product-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.admin-card {
+    background: white;
+    padding: 18px;
+    border-radius: 15px;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.06);
+    overflow: hidden;
+}
+
+.admin-card img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+.admin-card button {
+    margin-top: 12px;
+    margin-right: 5px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+}
+
+.delete-button {
+    background: #f3dada;
+    color: #9b4141;
+}
+
+/* VERSIÓN PARA CELULARES */
+
+@media (max-width: 768px) {
+
+    .admin-container {
+        padding: 30px 16px;
+    }
+
+    .admin-form {
+        padding: 20px;
+    }
+
+    #admin-product-list {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-card img {
+        height: 220px;
+    }
+
+    .admin-card button {
+        width: 100%;
+        margin-right: 0;
+    }
+
+    .admin-container .section-title h2 {
+        font-size: 27px;
+    }
+}
