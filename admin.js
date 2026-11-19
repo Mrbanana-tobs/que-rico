@@ -1,162 +1,298 @@
 
-// PRODUCTOS GUARDADOS
-let productos = JSON.parse(localStorage.getItem("productos")) || [];
+const loginContainer = document.getElementById("login-container");
+const loginForm = document.getElementById("login-form");
+const loginMessage = document.getElementById("login-message");
 
-let productoEditando = null;
+const productForm = document.getElementById("product-form");
+const productFormSection = productForm.closest(".admin-form");
+const productsSection = document.getElementById("admin-product-list").closest(".admin-products");
 
-// ELEMENTOS DEL FORMULARIO
-const formulario = document.getElementById("product-form");
 const nombre = document.getElementById("nombre");
 const precio = document.getElementById("precio");
 const categoria = document.getElementById("categoria");
 const descripcion = document.getElementById("descripcion");
 const imagen = document.getElementById("imagen");
+const productList = document.getElementById("admin-product-list");
+const formTitle = document.getElementById("form-title");
+const saveButton = document.getElementById("save-button");
+const cancelButton = document.getElementById("cancel-button");
 
-const listaProductos = document.getElementById("admin-product-list");
-const tituloFormulario = document.getElementById("form-title");
-const botonGuardar = document.getElementById("save-button");
-const botonCancelar = document.getElementById("cancel-button");
+let productoEditando = null;
+let imagenActual = null;
 
-// GUARDAR PRODUCTOS
-function guardarProductos() {
-    localStorage.setItem("productos", JSON.stringify(productos));
+function mostrarPanel(visible) {
+    loginContainer.hidden = visible;
+    productFormSection.hidden = !visible;
+    productsSection.hidden = !visible;
 }
 
-// MOSTRAR PRODUCTOS
-function mostrarProductos() {
-    listaProductos.innerHTML = "";
+async function iniciarPanel() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
 
-    if (productos.length === 0) {
-        listaProductos.innerHTML = "<p>Todavía no hay productos cargados.</p>";
+    if (session) {
+        mostrarPanel(true);
+        cargarProductos();
+        agregarBotonCerrarSesion();
+    } else {
+        mostrarPanel(false);
+    }
+}
+
+loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    loginMessage.textContent = "Ingresando...";
+
+    const email = document.getElementById("login-email").value;
+    const password = document.getElementById("login-password").value;
+
+    const { error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+    });
+
+    if (error) {
+        loginMessage.textContent = "Correo o contraseña incorrectos.";
+        console.error(error);
         return;
     }
 
-    productos.forEach((producto, indice) => {
-        const tarjeta = document.createElement("div");
-        tarjeta.className = "admin-card";
+    loginMessage.textContent = "";
+    mostrarPanel(true);
+    cargarProductos();
+    agregarBotonCerrarSesion();
+});
 
-        tarjeta.innerHTML = `
-            <img src="${producto.imagen || ''}" alt="Producto">
-            <h3></h3>
-            <p></p>
-            <p></p>
-            <button class="main-button" data-editar="${indice}">Editar</button>
-            <button class="delete-button" data-eliminar="${indice}">Eliminar</button>
-        `;
+function agregarBotonCerrarSesion() {
+    if (document.getElementById("logout-button")) return;
 
-        tarjeta.querySelector("h3").textContent = producto.nombre;
-        tarjeta.querySelectorAll("p")[0].textContent = producto.categoria;
-        tarjeta.querySelectorAll("p")[1].textContent =
-            "$" + producto.precio.toLocaleString("es-AR");
+    const boton = document.createElement("button");
+    boton.id = "logout-button";
+    boton.textContent = "Cerrar sesión";
+    boton.type = "button";
+    boton.style.margin = "20px";
 
-        listaProductos.appendChild(tarjeta);
+    productFormSection.before(boton);
+
+    boton.addEventListener("click", async () => {
+        await supabaseClient.auth.signOut();
+        location.reload();
     });
 }
 
-// AGREGAR O EDITAR PRODUCTO
-formulario.addEventListener("submit", function(evento) {
-    evento.preventDefault();
+async function cargarProductos() {
+    productList.textContent = "Cargando productos...";
 
-    const archivo = imagen.files[0];
+    const { data, error } = await supabaseClient
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    function completarGuardado(foto) {
-        const producto = {
-            nombre: nombre.value.trim(),
-            precio: Number(precio.value),
-            categoria: categoria.value,
-            descripcion: descripcion.value.trim(),
-            imagen: foto
-        };
-
-        if (productoEditando !== null) {
-            productos[productoEditando] = producto;
-        } else {
-            productos.push(producto);
-        }
-
-        guardarProductos();
-        mostrarProductos();
-        formulario.reset();
-        cancelarEdicion();
+    if (error) {
+        productList.textContent = "No se pudieron cargar los productos.";
+        console.error(error);
+        return;
     }
 
-    if (archivo) {
-        if (!archivo.type.startsWith("image/")) {
-            alert("Seleccioná una imagen válida.");
-            return;
-        }
+    productList.innerHTML = "";
 
-        if (archivo.size > 2 * 1024 * 1024) {
-            alert("La imagen debe pesar menos de 2 MB.");
-            return;
-        }
+    data.forEach(producto => {
+        const tarjeta = document.createElement("article");
+        tarjeta.className = "admin-card";
 
-        const lector = new FileReader();
+        const foto = document.createElement("img");
+        foto.src = producto.image_url || "";
+        foto.alt = producto.name;
 
-        lector.onload = function() {
-            completarGuardado(lector.result);
-        };
+        const titulo = document.createElement("h3");
+        titulo.textContent = producto.name;
 
-        lector.onerror = function() {
-            alert("No se pudo leer la imagen.");
-        };
+        const valor = document.createElement("p");
+        valor.textContent = "$" + producto.price.toLocaleString("es-AR");
 
-        lector.readAsDataURL(archivo);
+        const botonEditar = document.createElement("button");
+        botonEditar.textContent = "Editar";
+        botonEditar.type = "button";
+        botonEditar.dataset.action = "edit";
+        botonEditar.dataset.id = producto.id;
 
-    } else if (productoEditando !== null) {
-        completarGuardado(productos[productoEditando].imagen);
-    } else {
-        completarGuardado("");
-    }
-});
+        const botonEliminar = document.createElement("button");
+        botonEliminar.textContent = "Eliminar";
+        botonEliminar.type = "button";
+        botonEliminar.className = "delete-button";
+        botonEliminar.dataset.action = "delete";
+        botonEliminar.dataset.id = producto.id;
 
-// EDITAR Y ELIMINAR
-listaProductos.addEventListener("click", function(evento) {
-
-    const indiceEditar = evento.target.dataset.editar;
-    const indiceEliminar = evento.target.dataset.eliminar;
-
-    if (indiceEditar !== undefined) {
-        const producto = productos[Number(indiceEditar)];
-
-        productoEditando = Number(indiceEditar);
-
-        nombre.value = producto.nombre;
-        precio.value = producto.precio;
-        categoria.value = producto.categoria;
-        descripcion.value = producto.descripcion;
-
-        tituloFormulario.textContent = "Editar producto";
-        botonGuardar.textContent = "Guardar cambios";
-        botonCancelar.hidden = false;
-
-        window.scrollTo(0, 0);
-    }
-
-    if (indiceEliminar !== undefined) {
-        const confirmar = confirm("¿Querés eliminar este producto?");
-
-        if (confirmar) {
-            productos.splice(Number(indiceEliminar), 1);
-
-            guardarProductos();
-            mostrarProductos();
-        }
-    }
-});
-
-// CANCELAR EDICIÓN
-function cancelarEdicion() {
-    productoEditando = null;
-
-    formulario.reset();
-
-    tituloFormulario.textContent = "Agregar nuevo producto";
-    botonGuardar.textContent = "Agregar producto";
-    botonCancelar.hidden = true;
+        tarjeta.append(foto, titulo, valor, botonEditar, botonEliminar);
+        productList.appendChild(tarjeta);
+    });
 }
 
-botonCancelar.addEventListener("click", cancelarEdicion);
+async function subirImagen(archivo) {
+    const extension = archivo.name.split(".").pop();
+    const nombreArchivo = `${crypto.randomUUID()}.${extension}`;
+    const ruta = `${nombreArchivo}`;
 
-// INICIAR PANEL
-mostrarProductos();
+    const { error } = await supabaseClient.storage
+        .from("productos")
+        .upload(ruta, archivo, {
+            cacheControl: "3600",
+            upsert: false
+        });
+
+    if (error) throw error;
+
+    const { data } = supabaseClient.storage
+        .from("productos")
+        .getPublicUrl(ruta);
+
+    return data.publicUrl;
+}
+
+productForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    saveButton.disabled = true;
+    saveButton.textContent = "Guardando...";
+
+    try {
+        let imageUrl = imagenActual;
+
+        if (imagen.files.length > 0) {
+            const archivo = imagen.files[0];
+
+            if (archivo.size > 2 * 1024 * 1024) {
+                alert("La imagen no puede superar los 2 MB.");
+                return;
+            }
+
+            imageUrl = await subirImagen(archivo);
+        }
+
+        const producto = {
+            name: nombre.value.trim(),
+            price: Number(precio.value),
+            category: categoria.value,
+            description: descripcion.value.trim(),
+            image_url: imageUrl,
+            active: true
+        };
+
+        let resultado;
+
+        if (productoEditando) {
+            resultado = await supabaseClient
+                .from("products")
+                .update(producto)
+                .eq("id", productoEditando);
+        } else {
+            resultado = await supabaseClient
+                .from("products")
+                .insert([producto]);
+        }
+
+        if (resultado.error) throw resultado.error;
+
+        alert("Producto guardado correctamente.");
+        limpiarFormulario();
+        cargarProductos();
+
+    } catch (error) {
+        console.error(error);
+        alert("No se pudo guardar el producto: " + error.message);
+    } finally {
+        saveButton.disabled = false;
+        saveButton.textContent = "Guardar producto";
+    }
+});
+
+productList.addEventListener("click", async (e) => {
+    const boton = e.target.closest("button[data-action]");
+    if (!boton) return;
+
+    const id = boton.dataset.id;
+
+    if (boton.dataset.action === "edit") {
+        const { data, error } = await supabaseClient
+            .from("products")
+            .select("*")
+            .eq("id", id)
+            .single();
+
+        if (error) {
+            alert("No se pudo cargar el producto.");
+            return;
+        }
+
+        productoEditando = data.id;
+        imagenActual = data.image_url;
+
+        nombre.value = data.name;
+        precio.value = data.price;
+        categoria.value = data.category;
+        descripcion.value = data.description || "";
+        imagen.value = "";
+
+        formTitle.textContent = "Editar producto";
+        saveButton.textContent = "Guardar cambios";
+        cancelButton.hidden = false;
+
+        productForm.scrollIntoView({ behavior: "smooth" });
+    }
+
+    if (boton.dataset.action === "delete") {
+        if (!confirm("¿Seguro que querés eliminar este producto?")) return;
+
+        const { error } = await supabaseClient
+            .from("products")
+            .delete()
+            .eq("id", id);
+
+        if (error) {
+            alert("No se pudo eliminar el producto.");
+            console.error(error);
+            return;
+        }
+
+        cargarProductos();
+    }
+});
+
+function limpiarFormulario() {
+    productForm.reset();
+    productoEditando = null;
+    imagenActual = null;
+    formTitle.textContent = "Agregar producto";
+    saveButton.textContent = "Guardar producto";
+    cancelButton.hidden = true;
+}
+
+cancelButton.addEventListener("click", limpiarFormulario);
+
+iniciarPanel();
+
+
+const forgotPasswordButton = document.getElementById("forgot-password");
+
+forgotPasswordButton.addEventListener("click", async () => {
+    const email = document.getElementById("login-email").value.trim();
+
+    if (!email) {
+        alert("Primero escribí tu correo electrónico.");
+        return;
+    }
+
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(
+        email,
+        {
+            redirectTo: "https://mrbanana-tobs.github.io/que-rico/reset-password.html"
+        }
+    );
+
+    if (error) {
+        alert("No se pudo enviar el correo: " + error.message);
+        return;
+    }
+
+    alert("¡Listo! Revisá tu correo para recuperar la contraseña.");
+});
