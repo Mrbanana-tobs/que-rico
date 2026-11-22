@@ -210,3 +210,4 @@ function limpiarFormulario() {
 }
 
 cancelButton.addEventListener("click", limpiarFormulario);
+
