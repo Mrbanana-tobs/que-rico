@@ -98,18 +98,18 @@ productForm.addEventListener("submit", async (e) => {
     saveButton.textContent = "Guardando...";
 
     try {
-        let imageUrl = imagenActual;
+    let imageUrl = imagenActual;
 
-        if (imagen.files.length > 0) {
-            const archivo = imagen.files[0];
+    if (imagen.files.length > 0) {
+        const archivo = imagen.files[0];
 
-            if (archivo.size > 2 * 1024 * 1024) {
-                alert("La imagen no puede superar los 2 MB.");
-                return;
-            }
-
-            imageUrl = await subirImagen(archivo);
+        if (archivo.size > 10 * 1024 * 1024) {
+            alert("La imagen no puede superar los 10 MB.");
+            return;
         }
+
+        imageUrl = await subirImagen(archivo);
+    }
 
         const producto = {
             name: nombre.value.trim(),
